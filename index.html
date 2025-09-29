@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mini Social (Front-end Only)</title>
+  <style>
+    /* ====== Simple, modern styling ====== */
+    :root{
+      --bg:lavender; --card:lavender; --muted:#6b7280; --accent:purple;
+      --radius:12px; --gap:14px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+      background:var(--bg);
+      color:purple;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    .app{display:flex;gap:var(--gap);min-height:100vh;padding:20px}
+    .left, .right{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:0 6px 18px rgba(2,6,23,0.06)}
+    .left{width:300px;flex-shrink:0}
+    .right{flex:1;display:flex;flex-direction:column;gap:12px}
+    h1{margin:0;font-size:20px}
+    small{color:var(--muted)}
+    input, textarea, select{
+      width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ee;background:#fff;margin-top:8px;
+      font-size:14px
+    }
+    button{
+      padding:8px 12px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);background:linear-gradient(#fff,#f7fbff);
+      cursor:pointer;font-weight:600;
+    }
+    .muted{color:var(--muted);font-size:13px}
+    .me-info{margin-top:12px;padding:10px;border-radius:8px;background:#f7f9fc;border:1px solid #eef2ff}
+    .actions{display:flex;gap:8px;margin-top:10px}
+    .post-editor{display:flex;flex-direction:column;gap:8px}
+    .post{padding:12px;border-radius:10px;background:linear-gradient(#fff,#fbfdff);border:1px solid #eef2ff}
+    .post .meta{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .meta .who{font-weight:700}
+    .meta .time{font-size:12px;color:var(--muted)}
+    .content{margin:10px 0;white-space:pre-wrap}
+    .post .foot{display:flex;gap:10px;align-items:center}
+    .btn-ghost{background:transparent;border:1px solid #eef2ff}
+    .small{font-size:13px}
+    .comment{padding:8px;border-radius:8px;background:#fbfdff;margin-top:8px;border:1px solid #f0f6ff}
+    .profile-mini{display:flex;align-items:center;gap:10px}
+    .avatar{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#e0e7ff,#c7d2fe);display:flex;align-items:center;justify-content:center;font-weight:800;color:#1e293b}
+    .list{display:flex;flex-direction:column;gap:8px}
+    .link-like{color:var(--accent);text-decoration:underline;cursor:pointer;background:transparent;border:0;padding:0}
+    .center{display:flex;justify-content:center}
+    .tabs{display:flex;gap:8px;background:#fff;padding:6px;border-radius:10px}
+    .tab{padding:8px 12px;border-radius:8px;cursor:pointer}
+    .tab.active{background:#eef2ff;border:1px solid #dbeafe;color:var(--accent)}
+    footer{font-size:12px;color:var(--muted);margin-top:8px}
+    @media (max-width:900px){ .app{flex-direction:column;padding:12px} .left{width:100%} }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="left">
+      <h1>Mini Social</h1>
+      <small>Frontend-only demo • saved in localStorage</small>
+
+      <div id="authArea" style="margin-top:14px">
+        <div id="notLogged">
+          <label><b>Username</b><input id="inUsername" placeholder="choose a username (unique)"></label>
+          <label><b>Bio (optional)</b><textarea id="inBio" rows="2" placeholder="A short bio"></textarea></label>
+          <div class="actions">
+            <button id="btnRegister">Register</button>
+            <button id="btnLogin">Login</button>
+          </div>
+        </div>
+
+        <div id="logged" style="display:none">
+          <div class="me-info">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div id="meName" style="font-weight:800"></div>
+                <div id="meBio" class="muted small"></div>
+              </div>
+              <div class="center">
+                <button id="btnLogout" style="margin-left:8px">Logout</button>
+              </div>
+            </div>
+
+            <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+              <button id="btnEditProfile" class="btn-ghost">Edit Profile</button>
+              <button id="btnViewMine" class="btn-ghost">My Profile</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr style="margin:14px 0;border:0;height:1px;background:#eef2ff">
+
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="muted">Explore</div>
+          <div class="muted small">Feed shows all posts</div>
+        </div>
+        <div style="margin-top:10px" class="tabs">
+          <div class="tab active" data-tab="feed">Feed</div>
+          <div class="tab" data-tab="people">People</div>
+        </div>
+      </div>
+
+      <footer style="margin-top:18px">Tip: data stays in your browser. To reset open DevTools → Application → Clear Storage.</footer>
+    </aside>
+
+    <main class="right">
+      <!-- top: post editor when logged in -->
+      <div id="editorWrap" style="display:none" class="post-editor post">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="muted small">Create a post</div>
+          <div class="muted small">You: <span id="editorUser"></span></div>
+        </div>
+        <textarea id="postText" rows="3" placeholder="What's on your mind?"></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="muted small">Max 1000 chars</div>
+          <div>
+            <button id="btnPost">Post</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- central content -->
+      <div id="contentArea" style="display:flex;flex-direction:column;gap:12px"></div>
+
+    </main>
+  </div>
+
+  <script>
+  /* ======= Mini Social - Frontend-only using localStorage =======
+     Data structures saved in localStorage:
+       users: [{id, username, bio, createdAt}]
+       posts: [{id, userId, content, createdAt}]
+       comments: [{id, postId, userId, content, createdAt}]
+       follows: [{followerId, followingId}]   // many-to-many
+       likes: [{postId, userId}]
+       currentUserId: number|null
+     ============================================================ */
+
+  // ---------- Utilities ----------
+  function uid(prefix='id') {
+    return prefix + '_' + Math.random().toString(36).slice(2,9);
+  }
+  function nowISO(){ return new Date().toISOString(); }
+  function timeAgo(iso){
+    if(!iso) return '';
+    const d = new Date(iso);
+    const s = Math.floor((Date.now() - d)/1000);
+    if(s < 60) return s+'s';
+    if(s < 3600) return Math.floor(s/60)+'m';
+    if(s < 86400) return Math.floor(s/3600)+'h';
+    return Math.floor(s/86400)+'d';
+  }
+  function safe(s){ return String(s||'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+  // ---------- Storage helpers ----------
+  const DB = {
+    get(key){ try{ return JSON.parse(localStorage.getItem(key) || 'null'); } catch(e){ return null; } },
+    set(key, v){ localStorage.setItem(key, JSON.stringify(v)); },
+    getUsers(){ return DB.get('users') || []; },
+    setUsers(u){ DB.set('users', u); },
+    getPosts(){ return DB.get('posts') || []; },
+    setPosts(p){ DB.set('posts', p); },
+    getComments(){ return DB.get('comments') || []; },
+    setComments(c){ DB.set('comments', c); },
+    getFollows(){ return DB.get('follows') || []; },
+    setFollows(f){ DB.set('follows', f); },
+    getLikes(){ return DB.get('likes') || []; },
+    setLikes(l){ DB.set('likes', l); },
+    getCurrent(){ return localStorage.getItem('currentUserId') || null; },
+    setCurrent(id){ if(id==null) localStorage.removeItem('currentUserId'); else localStorage.setItem('currentUserId', id); }
+  };
+
+  // ---------- CRUD helpers ----------
+  function createUser(username, bio=''){
+    const users = DB.getUsers();
+    if(users.find(u => u.username.toLowerCase() === username.toLowerCase())) return { error:'username-taken' };
+    const user = { id: uid('u'), username: username.trim(), bio: bio.trim(), createdAt: nowISO() };
+    users.push(user); DB.setUsers(users);
+    return { user };
+  }
+  function findUserByUsername(un){ return DB.getUsers().find(u=>u.username.toLowerCase()===String(un).toLowerCase()); }
+  function findUserById(id){ return DB.getUsers().find(u=>u.id===id); }
+
+  function createPost(userId, content){
+    const posts = DB.getPosts();
+    const post = { id: uid('p'), userId, content: content.slice(0,1000), createdAt: nowISO() };
+    posts.push(post); DB.setPosts(posts);
+    return post;
+  }
+  function createComment(postId, userId, content){
+    const comments = DB.getComments();
+    const comment = { id: uid('c'), postId, userId, content: content.slice(0,500), createdAt: nowISO() };
+    comments.push(comment); DB.setComments(comments);
+    return comment;
+  }
+  function toggleLike(postId, userId){
+    const likes = DB.getLikes();
+    const idx = likes.findIndex(l=>l.postId===postId && l.userId===userId);
+    if(idx>=0){ likes.splice(idx,1); DB.setLikes(likes); return { liked:false }; }
+    likes.push({ postId, userId }); DB.setLikes(likes); return { liked:true };
+  }
+  function followUser(followerId, followingId){
+    if(followerId===followingId) return;
+    const f = DB.getFollows();
+    if(f.find(x=>x.followerId===followerId && x.followingId===followingId)) return;
+    f.push({ followerId, followingId }); DB.setFollows(f);
+  }
+  function unfollowUser(followerId, followingId){
+    const f = DB.getFollows();
+    const idx = f.findIndex(x=>x.followerId===followerId && x.followingId===followingId);
+    if(idx>=0){ f.splice(idx,1); DB.setFollows(f); }
+  }
+  function isFollowing(followerId, followingId){
+    const f = DB.getFollows(); return f.some(x=>x.followerId===followerId && x.followingId===followingId);
+  }
+  function likesForPost(postId){ return DB.getLikes().filter(l=>l.postId===postId); }
+  function commentsForPost(postId){ return DB.getComments().filter(c=>c.postId===postId).sort((a,b)=> new Date(a.createdAt)-new Date(b.createdAt)); }
+
+  // ---------- Rendering ----------
+  const contentArea = document.getElementById('contentArea');
+  function clearContent(){ contentArea.innerHTML=''; }
+
+  function renderFeed(){
+    clearContent();
+    const posts = DB.getPosts().slice().sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt));
+    if(posts.length===0){
+      contentArea.innerHTML = <div class="post small muted">No posts yet — be the first!</div>; return;
+    }
+    for(const p of posts){
+      const user = findUserById(p.userId) || { username:'(deleted)' };
+      const card = document.createElement('div'); card.className = 'post';
+      const likes = likesForPost(p.id);
+      const likedByMe = (DB.getCurrent() && likes.some(l=>l.userId===DB.getCurrent()));
+      card.innerHTML = `
+        <div class="meta">
+          <div style="display:flex;gap:10px;align-items:center">
+            <div class="avatar">${(user.username||'?').slice(0,1).toUpperCase()}</div>
+            <div>
+              <div class="who">${safe(user.username)}</div>
+              <div class="muted small">${safe(user.bio||'')}</div>
+            </div>
+          </div>
+          <div class="time muted">${timeAgo(p.createdAt)}</div>
+        </div>
+        <div class="content">${safe(p.content)}</div>
+        <div class="foot">
+          <div>
+            <button class="btn-ghost small likeBtn" data-id="${p.id}">${likedByMe? '♥' : '♡'} Like (${likes.length})</button>
+            <button class="btn-ghost small commentToggle" data-id="${p.id}">💬 Comment</button>
+            <button class="btn-ghost small viewProfile" data-user="${p.userId}">View Profile</button>
+          </div>
+          <div class="muted small">${commentsForPost(p.id).length} comments</div>
+        </div>
+        <div class="commentsWrap" data-id="${p.id}" style="display:none;margin-top:10px">
+          <div class="commentsList"></div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <input class="commentInput" data-id="${p.id}" placeholder="Write a comment..." />
+            <button class="btn-ghost commentSend" data-id="${p.id}">Send</button>
+          </div>
+        </div>
+      `;
+      contentArea.appendChild(card);
+      // populate comments list
+      const commentsWrap = card.querySelector('.commentsWrap');
+      const commentsList = commentsWrap.querySelector('.commentsList');
+      const comments = commentsForPost(p.id);
+      commentsList.innerHTML = comments.map(c=>{
+        const cu = findUserById(c.userId) || { username:'(deleted)' };
+        return <div class="comment"><strong>${safe(cu.username)}</strong> <span class="muted small">· ${timeAgo(c.createdAt)}</span><div>${safe(c.content)}</div></div>;
+      }).join('');
+    }
+  }
+  
+  function renderPeople(){
+    clearContent();
+    const users = DB.getUsers().slice().sort((a,b)=> a.username.localeCompare(b.username));
+    const current = DB.getCurrent();
+    const wrap = document.createElement('div'); wrap.className='list';
+    if(users.length===0){ wrap.innerHTML='<div class="muted small">No users registered yet</div>'; contentArea.appendChild(wrap); return; }
+    for(const u of users){
+      const el = document.createElement('div'); el.className='post profile-mini';
+      el.innerHTML = `<div style="display:flex;flex-direction:column">
+                        <div style="display:flex;align-items:center;gap:10px">
+                          <div class="avatar">${safe(u.username.slice(0,1).toUpperCase())}</div>
+                          <div>
+                            <div style="font-weight:800">${safe(u.username)}</div>
+                            <div class="muted small">${safe(u.bio)}</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div style="margin-left:auto;display:flex;flex-direction:column;gap:6px">
+                        <div style="font-size:12px" id="f_${u.id}"></div>
+                        <div>
+                          <button class="btn-ghost viewProfile" data-user="${u.id}">View</button>
+                          ${ current && current!==u.id ? <button class="btn-ghost followBtn" data-user="${u.id}">${isFollowing(current,u.id)?'Unfollow':'Follow'}</button> : '' }
+                        </div>
+                      </div>`;
+      wrap.appendChild(el);
+      // follower / following counts
+      const fdiv = el.querySelector(#f_${u.id});
+      const fcount = DB.getFollows().filter(x=>x.followingId===u.id).length;
+      const followingCount = DB.getFollows().filter(x=>x.followerId===u.id).length;
+      fdiv.innerHTML = <span class="muted small">${fcount} followers · ${followingCount} following</span>;
+    }
+    contentArea.appendChild(wrap);
+  }
+
+  function renderProfile(userId){
+    clearContent();
+    const u = findUserById(userId);
+    if(!u){ contentArea.innerHTML = <div class="muted small">User not found.</div>; return; }
+    const me = DB.getCurrent();
+    const fcount = DB.getFollows().filter(x=>x.followingId===u.id).length;
+    const followingCount = DB.getFollows().filter(x=>x.followerId===u.id).length;
+
+    const profileCard = document.createElement('div'); profileCard.className='post';
+    profileCard.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="avatar">${safe(u.username.slice(0,1).toUpperCase())}</div>
+          <div>
+            <div style="font-weight:800;font-size:18px">${safe(u.username)}</div>
+            <div class="muted small">${safe(u.bio)}</div>
+            <div class="muted small" style="margin-top:6px">${fcount} followers · ${followingCount} following</div>
+          </div>
+        </div>
+        <div>
+          ${ me && me!==u.id ? (isFollowing(me,u.id) ? <button class="btn-ghost unfollowBtn" data-user="${u.id}">Unfollow</button> : <button class="btn-ghost followBtn" data-user="${u.id}">Follow</button>) : '' }
+          ${ me && me===u.id ? <button class="btn-ghost" id="editProfileHere">Edit Profile</button> : '' }
+        </div>
+      </div>
+    `;
+    contentArea.appendChild(profileCard);
+
+    // user's posts
+    const posts = DB.getPosts().filter(p=>p.userId===u.id).sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt));
+    if(posts.length===0){
+      const none = document.createElement('div'); none.className='muted small post'; none.textContent = 'No posts yet.';
+      contentArea.appendChild(none);
+    } else {
+      for(const p of posts){
+        const card = document.createElement('div'); card.className='post';
+        const likes = likesForPost(p.id);
+        const likedByMe = (DB.getCurrent() && likes.some(l=>l.userId===DB.getCurrent()));
+        card.innerHTML = `
+          <div class="meta" style="justify-content:space-between">
+            <div><strong>${safe(u.username)}</strong> <span class="muted small">· ${timeAgo(p.createdAt)}</span></div>
+            <div class="muted small">${likes.length} ♥</div>
+          </div>
+          <div class="content">${safe(p.content)}</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn-ghost likeBtn small" data-id="${p.id}">${likedByMe? '♥' : '♡'} Like</button>
+            <button class="btn-ghost small commentToggle" data-id="${p.id}">Comment</button>
+          </div>
+          <div class="commentsWrap" data-id="${p.id}" style="display:none;margin-top:10px">
+            <div class="commentsList"></div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <input class="commentInput" data-id="${p.id}" placeholder="Write a comment..." />
+              <button class="btn-ghost commentSend" data-id="${p.id}">Send</button>
+            </div>
+          </div>
+        `;
+        contentArea.appendChild(card);
+        // render comments
+        const commentsList = card.querySelector('.commentsList');
+        const comments = commentsForPost(p.id);
+        commentsList.innerHTML = comments.map(c=>{
+          const cu = findUserById(c.userId) || { username:'(deleted)' };
+          return <div class="comment"><strong>${safe(cu.username)}</strong> <span class="muted small">· ${timeAgo(c.createdAt)}</span><div>${safe(c.content)}</div></div>;
+        }).join('');
+      }
+    }
+  }
+
+  // ---------- Event wiring ----------
+  document.addEventListener('click', function(e){
+    // tabs
+    if(e.target.matches('.tab')){
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      e.target.classList.add('active');
+      const tab = e.target.dataset.tab;
+      if(tab === 'feed') { renderFeed(); }
+      else if(tab === 'people') { renderPeople(); }
+      return;
+    }
+
+    // register
+    if(e.target.id === 'btnRegister'){
+      const name = document.getElementById('inUsername').value.trim();
+      const bio = document.getElementById('inBio').value.trim();
+      if(!name){ alert('Enter a username'); return; }
+      const res = createUser(name,bio);
+      if(res.error === 'username-taken'){ alert('Username already taken'); return; }
+      DB.setCurrent(res.user.id);
+      refreshUI();
+      renderFeed();
+      return;
+    }
+
+    // login (simple: by username)
+    if(e.target.id === 'btnLogin'){
+      const name = document.getElementById('inUsername').value.trim();
+      if(!name){ alert('Enter username'); return; }
+      const u = findUserByUsername(name);
+      if(!u){ alert('User not found. Register first.'); return; }
+      DB.setCurrent(u.id);
+      refreshUI();
+      renderFeed();
+      return;
+    }
+
+    // logout
+    if(e.target.id === 'btnLogout'){
+      DB.setCurrent(null);
+      refreshUI();
+      renderFeed();
+      return;
+    }
+
+    // open profile view from Feed/People
+    if(e.target.matches('.viewProfile')){
+      const uid = e.target.dataset.user;
+      renderProfile(uid);
+      return;
+    }
+
+    // follow/unfollow from People or Profile
+    if(e.target.matches('.followBtn')){
+      const target = e.target.dataset.user;
+      const me = DB.getCurrent();
+      if(!me){ alert('Log in to follow'); return; }
+      followUser(me, target);
+      refreshUI();
+      if(document.querySelector('.tab.active')?.dataset?.tab === 'people') renderPeople();
+      else renderProfile(target);
+      return;
+    }
+    if(e.target.matches('.unfollowBtn')){
+      const target = e.target.dataset.user;
+      const me = DB.getCurrent();
+      if(!me){ alert('Log in to unfollow'); return; }
+      unfollowUser(me, target);
+      refreshUI();
+      renderProfile(target);
+      return;
+    }
+
+    // like button (anywhere)
+    if(e.target.matches('.likeBtn')){
+      const postId = e.target.dataset.id;
+      const me = DB.getCurrent();
+      if(!me){ alert('Log in to like'); return; }
+      toggleLike(postId, me);
+      refreshUI();
+      // refresh current view
+      const activeTab = document.querySelector('.tab.active');
+      if(activeTab && activeTab.dataset.tab==='feed') renderFeed();
+      else {
+        // we might be in profile view; re-render profile of this post's owner
+        const p = DB.getPosts().find(x=>x.id===postId);
+        if(p) renderProfile(p.userId); else renderFeed();
+      }
+      return;
+    }
+
+    // toggle comments area
+    if(e.target.matches('.commentToggle')){
+      const id = e.target.dataset.id;
+      const wrap = document.querySelector(.commentsWrap[data-id="${id}"]);
+      if(wrap) wrap.style.display = wrap.style.display==='none' ? 'block' : 'none';
+      return;
+    }
+
+    // send comment
+    if(e.target.matches('.commentSend')){
+      const id = e.target.dataset.id;
+      const input = document.querySelector(.commentInput[data-id="${id}"]);
+      const text = input.value.trim();
+      const me = DB.getCurrent();
+      if(!me){ alert('Log in to comment'); return; }
+      if(!text) return;
+      createComment(id, me, text);
+      input.value = '';
+      // re-render comments in current view quickly
+      const commentsList = document.querySelector(.commentsWrap[data-id="${id}"] .commentsList);
+      if(commentsList){
+        const comments = commentsForPost(id);
+        commentsList.innerHTML = comments.map(c=>{
+          const cu = findUserById(c.userId) || { username:'(deleted)' };
+          return <div class="comment"><strong>${safe(cu.username)}</strong> <span class="muted small">· ${timeAgo(c.createdAt)}</span><div>${safe(c.content)}</div></div>;
+        }).join('');
+      }
+      // update counts in feed/profile
+      refreshUI();
+      return;
+    }
+
+    // New post
+    if(e.target.id === 'btnPost'){
+      const text = document.getElementById('postText').value.trim();
+      const me = DB.getCurrent();
+      if(!me){ alert('Log in to post'); return; }
+      if(!text) return alert('Enter post content');
+      createPost(me, text);
+      document.getElementById('postText').value = '';
+      renderFeed();
+      return;
+    }
+
+    // edit profile from profile
+    if(e.target.id === 'editProfileHere' || e.target.id === 'btnEditProfile'){
+      openEditProfileModal();
+      return;
+    }
+
+    // view my profile button
+    if(e.target.id === 'btnViewMine'){
+      const me = DB.getCurrent();
+      if(me) renderProfile(me);
+      return;
+    }
+  });
+
+  // ---------- Edit profile (simple prompt modal) ----------
+  function openEditProfileModal(){
+    const meId = DB.getCurrent();
+    if(!meId){ alert('Log in'); return; }
+    const me = findUserById(meId);
+    const newBio = prompt('Edit your bio:', me.bio || '');
+    if(newBio === null) return;
+    // update
+    const users = DB.getUsers();
+    const idx = users.findIndex(u=>u.id===meId);
+    if(idx>=0){ users[idx].bio = newBio; DB.setUsers(users); refreshUI(); renderProfile(meId); }
+  }
+
+  // ---------- Refresh UI (auth area, editor) ----------
+  function refreshUI(){
+    // auth area
+    const current = DB.getCurrent();
+    const notLogged = document.getElementById('notLogged');
+    const logged = document.getElementById('logged');
+    const editor = document.getElementById('editorWrap');
+    if(current){
+      notLogged.style.display='none'; logged.style.display='block'; editor.style.display='block';
+      const me = findUserById(current);
+      document.getElementById('meName').textContent = me.username;
+      document.getElementById('meBio').textContent = me.bio || '';
+      document.getElementById('editorUser').textContent = me.username;
+    } else {
+      notLogged.style.display='block'; logged.style.display='none'; editor.style.display='none';
+    }
+    // update follow buttons on people tab if visible
+    if(document.querySelector('.tab.active')?.dataset?.tab === 'people') renderPeople();
+  }
+
+  // ---------- Init sample data (first run) ----------
+  function seedIfEmpty(){
+    if(DB.getUsers().length===0){
+      // add two friendly users
+      const a = createUser('alice','Loves code and coffee').user;
+      const b = createUser('bob','Traveler & photographer').user;
+      createPost(a.id, 'Hello! I am Alice. This is my first post.');
+      createPost(b.id, 'Hi all — Bob here. Nice to meet you!');
+      followUser(a.id, b.id);
+    }
+  }
+
+  // ---------- Boot ----------
+  (function boot(){
+    seedIfEmpty();
+    refreshUI();
+    renderFeed();
+    // quick keyboard shortcut: Ctrl+K focuses post box
+    document.addEventListener('keydown', e => { if(e.ctrlKey && e.key.toLowerCase()==='k'){ const t = document.getElementById('postText'); if(t){ t.focus(); } }});
+  })();
+
+  </script>
+</body>
+</html>
