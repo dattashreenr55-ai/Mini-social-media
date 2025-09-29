@@ -231,7 +231,7 @@
     clearContent();
     const posts = DB.getPosts().slice().sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt));
     if(posts.length===0){
-      contentArea.innerHTML = <div class="post small muted">No posts yet — be the first!</div>; return;
+      contentArea.innerHTML = `<div class="post small muted">No posts yet — be the first!</div>`; return;
     }
     for(const p of posts){
       const user = findUserById(p.userId) || { username:'(deleted)' };
@@ -273,11 +273,11 @@
       const comments = commentsForPost(p.id);
       commentsList.innerHTML = comments.map(c=>{
         const cu = findUserById(c.userId) || { username:'(deleted)' };
-        return <div class="comment"><strong>${safe(cu.username)}</strong> <span class="muted small">· ${timeAgo(c.createdAt)}</span><div>${safe(c.content)}</div></div>;
+        return `<div class="comment"><strong>${safe(cu.username)}</strong> <span class="muted small">· ${timeAgo(c.createdAt)}</span><div>${safe(c.content)}</div></div>`;
       }).join('');
     }
   }
-  
+
   function renderPeople(){
     clearContent();
     const users = DB.getUsers().slice().sort((a,b)=> a.username.localeCompare(b.username));
@@ -299,15 +299,15 @@
                         <div style="font-size:12px" id="f_${u.id}"></div>
                         <div>
                           <button class="btn-ghost viewProfile" data-user="${u.id}">View</button>
-                          ${ current && current!==u.id ? <button class="btn-ghost followBtn" data-user="${u.id}">${isFollowing(current,u.id)?'Unfollow':'Follow'}</button> : '' }
+                          ${ current && current!==u.id ? `<button class="btn-ghost followBtn" data-user="${u.id}">${isFollowing(current,u.id)?'Unfollow':'Follow'}</button>` : '' }
                         </div>
                       </div>`;
       wrap.appendChild(el);
       // follower / following counts
-      const fdiv = el.querySelector(#f_${u.id});
+      const fdiv = el.querySelector(`#f_${u.id}`);
       const fcount = DB.getFollows().filter(x=>x.followingId===u.id).length;
       const followingCount = DB.getFollows().filter(x=>x.followerId===u.id).length;
-      fdiv.innerHTML = <span class="muted small">${fcount} followers · ${followingCount} following</span>;
+      fdiv.innerHTML = `<span class="muted small">${fcount} followers · ${followingCount} following</span>`;
     }
     contentArea.appendChild(wrap);
   }
@@ -315,7 +315,7 @@
   function renderProfile(userId){
     clearContent();
     const u = findUserById(userId);
-    if(!u){ contentArea.innerHTML = <div class="muted small">User not found.</div>; return; }
+    if(!u){ contentArea.innerHTML = `<div class="muted small">User not found.</div>`; return; }
     const me = DB.getCurrent();
     const fcount = DB.getFollows().filter(x=>x.followingId===u.id).length;
     const followingCount = DB.getFollows().filter(x=>x.followerId===u.id).length;
@@ -332,8 +332,8 @@
           </div>
         </div>
         <div>
-          ${ me && me!==u.id ? (isFollowing(me,u.id) ? <button class="btn-ghost unfollowBtn" data-user="${u.id}">Unfollow</button> : <button class="btn-ghost followBtn" data-user="${u.id}">Follow</button>) : '' }
-          ${ me && me===u.id ? <button class="btn-ghost" id="editProfileHere">Edit Profile</button> : '' }
+          ${ me && me!==u.id ? (isFollowing(me,u.id) ? `<button class="btn-ghost unfollowBtn" data-user="${u.id}">Unfollow</button>` : `<button class="btn-ghost followBtn" data-user="${u.id}">Follow</button>`) : '' }
+          ${ me && me===u.id ? `<button class="btn-ghost" id="editProfileHere">Edit Profile</button>` : '' }
         </div>
       </div>
     `;
@@ -373,7 +373,7 @@
         const comments = commentsForPost(p.id);
         commentsList.innerHTML = comments.map(c=>{
           const cu = findUserById(c.userId) || { username:'(deleted)' };
-          return <div class="comment"><strong>${safe(cu.username)}</strong> <span class="muted small">· ${timeAgo(c.createdAt)}</span><div>${safe(c.content)}</div></div>;
+          return `<div class="comment"><strong>${safe(cu.username)}</strong> <span class="muted small">· ${timeAgo(c.createdAt)}</span><div>${safe(c.content)}</div></div>`;
         }).join('');
       }
     }
@@ -473,7 +473,7 @@
     // toggle comments area
     if(e.target.matches('.commentToggle')){
       const id = e.target.dataset.id;
-      const wrap = document.querySelector(.commentsWrap[data-id="${id}"]);
+      const wrap = document.querySelector(`.commentsWrap[data-id="${id}"]`);
       if(wrap) wrap.style.display = wrap.style.display==='none' ? 'block' : 'none';
       return;
     }
@@ -481,7 +481,7 @@
     // send comment
     if(e.target.matches('.commentSend')){
       const id = e.target.dataset.id;
-      const input = document.querySelector(.commentInput[data-id="${id}"]);
+      const input = document.querySelector(`.commentInput[data-id="${id}"]`);
       const text = input.value.trim();
       const me = DB.getCurrent();
       if(!me){ alert('Log in to comment'); return; }
@@ -489,12 +489,12 @@
       createComment(id, me, text);
       input.value = '';
       // re-render comments in current view quickly
-      const commentsList = document.querySelector(.commentsWrap[data-id="${id}"] .commentsList);
+      const commentsList = document.querySelector(`.commentsWrap[data-id="${id}"] .commentsList`);
       if(commentsList){
         const comments = commentsForPost(id);
         commentsList.innerHTML = comments.map(c=>{
           const cu = findUserById(c.userId) || { username:'(deleted)' };
-          return <div class="comment"><strong>${safe(cu.username)}</strong> <span class="muted small">· ${timeAgo(c.createdAt)}</span><div>${safe(c.content)}</div></div>;
+          return `<div class="comment"><strong>${safe(cu.username)}</strong> <span class="muted small">· ${timeAgo(c.createdAt)}</span><div>${safe(c.content)}</div></div>`;
         }).join('');
       }
       // update counts in feed/profile
